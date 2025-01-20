@@ -1,0 +1,127 @@
+-- Thông báo đổi server (hiện một lần)
+local serverHopNotified = false  -- Biến kiểm tra đã thông báo chưa
+
+local a = game.JobId
+repeat
+    task.spawn(
+        pcall,
+        function()
+            Time = 0.1
+            repeat
+                wait()
+            until game:IsLoaded()
+            wait(Time)
+            local a = game.PlaceId
+            local b = {}
+            local c = ""
+            local d = os.date("!*t").hour
+            local e = false
+            function TPReturner()
+                local e
+                if c == "" then
+                    e =
+                        game.HttpService:JSONDecode(
+                        game:HttpGet(
+                            "https://games.roblox.com/v1/games/" .. a .. "/servers/Public?sortOrder=Asc&limit=100"
+                        )
+                    )
+                else
+                    e =
+                        game.HttpService:JSONDecode(
+                        game:HttpGet(
+                            "https://games.roblox.com/v1/games/" ..
+                                a .. "/servers/Public?sortOrder=Asc&limit=100&cursor=" .. c
+                        )
+                    )
+                end
+                local f = ""
+                if e.nextPageCursor and e.nextPageCursor ~= "null" and e.nextPageCursor ~= nil then
+                    c = e.nextPageCursor
+                end
+                local c = 0
+                for e, e in pairs(e.data) do
+                    local g = true
+                    f = tostring(e.id)
+                    if tonumber(e.maxPlayers) > tonumber(e.playing) then
+                        for a, a in pairs(b) do
+                            if c ~= 0 then
+                                if f == tostring(a) then
+                                    g = false
+                                end
+                            else
+                                if tonumber(d) ~= tonumber(a) then
+                                    local a =
+                                        pcall(
+                                        function()
+                                            delfile("NotSameServers.json")
+                                            b = {}
+                                            table.insert(b, d)
+                                        end
+                                    )
+                                end
+                            end
+                            c = c + 1
+                        end
+                        if g == true then
+                            table.insert(b, f)
+                            wait()
+                            pcall(
+                                function()
+                                    writefile("NotSameServers.json", game:GetService("HttpService"):JSONEncode(b))
+                                    wait()
+                                    game:GetService("TeleportService"):TeleportToPlaceInstance(
+                                        a,
+                                        f,
+                                        game.Players.LocalPlayer
+                                    )
+                                end
+                            )
+                            wait(4)
+                        end
+                    end
+                end
+            end
+            function Teleport()
+                while wait() do
+                    pcall(
+                        function()
+                            TPReturner()
+                            if c ~= "" then
+                                TPReturner()
+                            end
+                        end
+                    )
+                end
+            end
+
+            -- Kiểm tra và thông báo chỉ một lần khi đổi server
+            if not serverHopNotified then
+                game.StarterGui:SetCore(
+                    "SendNotification",
+                    {
+                        Title = "Nguyễn Phú Hiếu ",
+                        Text = "Đang Đổi Sever...",
+                        Duration = 10
+                    }
+                )
+                serverHopNotified = true  -- Đánh dấu là đã thông báo
+            end
+
+            Teleport()
+        end
+    )
+    wait()
+until game.JobId ~= a
+function PostWebhook(Url, message)
+    local request = http_request or request or HttpPost or syn.request
+    local data =
+        request(
+        {
+            Url = Url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = game:GetService("HttpService"):JSONEncode(message)
+        }
+    )
+    return ""
+end
